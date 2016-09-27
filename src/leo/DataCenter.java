@@ -2,7 +2,6 @@ package leo;
 import java.util.LinkedList;
 import java.util.List;
 
-
 public class DataCenter {
 	List<Integer[]> trainData;
 	List<Integer[]> testData;
@@ -39,15 +38,7 @@ public class DataCenter {
 			result.append("\n");			
 		}
 		return result.toString();
-	}
-	
-	
-	public static void main(String[] args) {		
-		DataCenter dCenter = new DataCenter();
-		dCenter.parseFile("./data/train.dat", true);
-		System.out.println(dCenter.toString());
-		
-	}
+	}	
 
 	public void parseFile(String name, boolean isTrainData){		
 		List<String> lines = DataReader.readLines(name);

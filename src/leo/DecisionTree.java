@@ -1,10 +1,18 @@
 package leo;
 
-public class DecisionTree {
-	
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
+
+import javax.sound.sampled.Line;
+
+public class DecisionTree {	
 	TreeNode root = null;
 	int attriNum = 0;
 	DataCenter dCenter = null;
+	double prunrate = 0;
 	
 	DecisionTree(){
 		root = null;
@@ -18,12 +26,17 @@ public class DecisionTree {
 	}
 	
 	public static void main(String[] args) {
-		DecisionTree dTree = new DecisionTree();		
-		dTree.parseFile("./data/train2.dat", true);	
-		dTree.parseFile("./data/test2.dat", false);	
-		dTree.run();
-		
-		
+		if(args.length !=3){
+			System.out.println("Usage: java -jar DecisionTree.jar  [train_data] [test_data] [pruning_factor]");
+			return;
+		}
+		String trainFileName = args[0];
+		String testFileName = args[1];
+		DecisionTree dTree = new DecisionTree();
+		dTree.prunrate = Double.parseDouble(args[2]);				
+		dTree.parseFile(trainFileName, true);	
+		dTree.parseFile(testFileName, false);		
+		dTree.run();		
 	}
 	
 	void run(){
@@ -34,6 +47,8 @@ public class DecisionTree {
 		line("Pre-Pruned Accuracy");
 		line(getSummary());
 		line("\n\n");
+		
+		prune();
 		print(root, 0);
 		line("");
 		line("Post-Pruned Accuracy");
@@ -81,8 +96,7 @@ public class DecisionTree {
 				cur.append(node.right.label);
 				line(cur.toString());
 			}
-		}
-		
+		}		
 	}
 	
 	void line(String str){
@@ -90,7 +104,65 @@ public class DecisionTree {
 	}
 	
 	void prune(){
-		
+		int totalNode = getTotalNode(root);
+		int prunsize = (int)(prunrate*totalNode);
+		updateTreeNodeId();
+		Random random = new Random();
+		Set<Integer> prunNodeSet = new HashSet<>();
+		while(prunNodeSet.size() != prunsize){
+			prunNodeSet.add(2+random.nextInt(totalNode+1));
+		}	
+		for(Integer nodeId : prunNodeSet){
+			pruneNode(nodeId);
+		}
+	}
+	
+	void pruneNode(int nodeId){
+		TreeNode node = searchNodeFromId(nodeId);
+		if(node==null) return;
+		TreeNode parent = node.parent;
+		parent.label = parent.num[0] > parent.num[1] ? 0: 1;
+		if(node==parent.right){
+			parent.right = null;
+		}else{
+			parent.left = null;
+		}		
+	}
+	// if nodeId does not exist, return null
+	TreeNode searchNodeFromId(int nodeId){
+		TreeNode node = root;
+		Queue<TreeNode> queue = new LinkedList<TreeNode>();
+		queue.add(root);		
+		while(!queue.isEmpty()){			
+			node = queue.poll();
+			if(node==null) continue;
+			if(node.nodeId == nodeId) return node;
+			if(node.nodeId > nodeId) break; 			
+			queue.add(node.left);
+			queue.add(node.right);						
+		}
+		return null;
+	}
+	
+	//update id and parent field
+	void updateTreeNodeId(){
+		TreeNode node = root;
+		Queue<TreeNode> queue = new LinkedList<TreeNode>();
+		queue.add(root);
+		int idx = 1;
+		while(!queue.isEmpty()){			
+			node = queue.poll();			
+			node.nodeId = idx;						
+			if(node.left!=null){
+				node.left.parent = node;
+				queue.add(node.left);
+			}
+			if(node.right!=null){
+				node.right.parent = node;
+				queue.add(node.right);
+			}
+			idx++;			
+		}
 	}
 	
 	int getTotalLeafNode(TreeNode node){
@@ -126,7 +198,5 @@ public class DecisionTree {
 		summry.append("Accuracy of the model on the testing dataset = ");
 		summry.append(performance.getAccuracy(dCenter.testData)*100 + "%\n");		
 		return summry.toString();
-	}
-	
-	
+	}	
 }
