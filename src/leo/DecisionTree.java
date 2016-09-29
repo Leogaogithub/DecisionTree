@@ -26,22 +26,53 @@ public class DecisionTree {
 	}
 	
 	public static void main(String[] args) {
-		if(args.length !=3){
-			System.out.println("Usage: java -jar DecisionTree.jar  [train_data] [test_data] [pruning_factor]");
+		if(args.length !=2){
+			System.out.println("Usage: java -jar DecisionTree.jar  [train_data] [test_data]");
 			return;
 		}
 		String trainFileName = args[0];
-		String testFileName = args[1];
+		String testFileName = args[1];	
+		//String trainFileName = "./data/train.dat";
+		//String testFileName = "./data/test.dat";
 		DecisionTree dTree = new DecisionTree();
-		dTree.prunrate = Double.parseDouble(args[2]);				
+		//dTree.prunrate = Double.parseDouble(args[2]);
+		//dTree.prunrate = 0.2;
 		dTree.parseFile(trainFileName, true);	
 		dTree.parseFile(testFileName, false);		
-		dTree.run();		
+		//dTree.runPruneUsingID3();	
+		dTree.runCompareID3andRandom();
 	}
 	
-	void run(){
-		ID3Algorithm id3Algorithm = new ID3Algorithm();
-		root = id3Algorithm.ID3(dCenter.trainData, dCenter.attributs);
+	void runCompareID3andRandom(){
+		DecisionTreeGenerator decisionTreeGenerator = new DecisionTreeGenerator();
+		ID3Strategy id3Strategy = new ID3Strategy();
+		decisionTreeGenerator.setStrategy(id3Strategy);
+		root = decisionTreeGenerator.generateDecisionTree(dCenter.trainData, dCenter.attributs);
+		print(root, 0);
+		line("");
+		line("ID3 Accuracy");
+		line(getSummary());
+		line("\n\n");
+		
+		RandomAttributeSelectionStrategy randomStrategy = new RandomAttributeSelectionStrategy();
+		decisionTreeGenerator.setStrategy(randomStrategy);
+		root = decisionTreeGenerator.generateDecisionTree(dCenter.trainData, dCenter.attributs);
+		prune();
+		print(root, 0);
+		line("");
+		line("Random Attribute Selection Accuracy");
+		line(getSummary());
+		line("");
+		
+	}
+	
+	
+	
+	void runPruneUsingID3(){
+		DecisionTreeGenerator decisionTreeGenerator = new DecisionTreeGenerator();
+		ID3Strategy id3Strategy = new ID3Strategy();
+		decisionTreeGenerator.setStrategy(id3Strategy);
+		root = decisionTreeGenerator.generateDecisionTree(dCenter.trainData, dCenter.attributs);
 		print(root, 0);
 		line("");
 		line("Pre-Pruned Accuracy");
@@ -176,8 +207,17 @@ public class DecisionTree {
 		return 1+ getTotalNode(node.left)+getTotalNode(node.right);
 	}
 	
+	int getSumDepthLeafNode(TreeNode node, int deep){
+		if(node == null) return 0;
+		if(!node.hasChild()) return deep;		
+		return getSumDepthLeafNode(node.left, deep+1)+getSumDepthLeafNode(node.right,deep+1);
+	}	
+	
+	
 	public String getSummary(){
 		StringBuilder summry = new StringBuilder();
+		double averageDepth = getSumDepthLeafNode(root, 0)/(double)getTotalLeafNode(root);
+		
 		Performance performance = new Performance(root);
 		summry.append("------------------------------------------------------------\n");
 		summry.append("Number of training instances = ");
@@ -187,7 +227,9 @@ public class DecisionTree {
 		summry.append("Total number of nodes in the tree = ");
 		summry.append(getTotalNode(root)+ "\n");
 		summry.append("Number of leaf nodes in the tree = ");
-		summry.append(getTotalLeafNode(root)+ "\n");
+		summry.append(getTotalLeafNode(root)+ "\n");		
+		summry.append("Average	Depth  = ");
+		summry.append(averageDepth + "\n");
 		summry.append("Accuracy of the model on the training dataset = ");
 		summry.append(performance.getAccuracy(dCenter.trainData)*100 + "%\n");
 		

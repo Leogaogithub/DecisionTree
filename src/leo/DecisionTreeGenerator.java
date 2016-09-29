@@ -3,8 +3,12 @@ package leo;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ID3Algorithm {
-	TreeNode ID3(List<Integer[]> examples, List<Integer> attributes){
+public class DecisionTreeGenerator {
+	SelectAttributeStrategy strategy = null;
+	public void setStrategy(SelectAttributeStrategy strategy){
+		this.strategy = strategy;
+	}
+	TreeNode generateDecisionTree(List<Integer[]> examples, List<Integer> attributes){
 		int attriNum = examples.get(0).length;
 		//root attach attribute
 		//leaf don't attach attribute		
@@ -29,7 +33,8 @@ public class ID3Algorithm {
 			return result;
 		}
 		
-		int bestAttri = informationGenCalc.getBestClassifies(examples, attributes);	
+		//int bestAttri = informationGenCalc.getBestClassifies(examples, attributes);
+		int bestAttri = strategy.selectAttributeId(examples, attributes);
 		result.attrId = bestAttri;		
 		result.label = result.num[0] > result.num[1] ? 0:1;		
 		List<Integer[]> examplesLeft = new LinkedList<Integer[]>();
@@ -48,7 +53,7 @@ public class ID3Algorithm {
 		attributesLeft.remove(xInteger);
 		LinkedList<Integer> attributesRight = (LinkedList<Integer>) attributesLeft.clone();
 		if(examplesLeft.size() > 0){
-			result.left  = ID3(examplesLeft,  attributesLeft);
+			result.left  = generateDecisionTree(examplesLeft,  attributesLeft);
 		}else{
 			TreeNode left =  new TreeNode();
 			//???
@@ -56,7 +61,7 @@ public class ID3Algorithm {
 			result.left = null;
 		}
 		if(examplesRight.size() > 0){
-			result.right = ID3(examplesRight,  attributesRight);
+			result.right = generateDecisionTree(examplesRight,  attributesRight);
 		}else{
 			TreeNode right =  new TreeNode();
 			//???
